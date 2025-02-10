@@ -18,11 +18,10 @@ mongoose.connect(process.env.MONGO_URI)
     .catch((error) => console.error("MongoDB connection error:", error));
 
 // Middleware
-// Updated CORS configuration for production
 const corsOptions = {
-    origin: true, // This allows all origins
+    origin: true,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Added OPTIONS for preflight requests
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     exposedHeaders: ['Set-Cookie'],
     preflightContinue: true,
@@ -32,45 +31,61 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Updated session configuration for Vercel
-app.use(session({
+// Session configuration
+const sessionConfig = {
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    proxy: true, // Required for Vercel
+    proxy: true,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         maxAge: 24 * 60 * 60 * 1000,
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        httpOnly: true,
-        domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : undefined // Adjust this based on your domain
+        httpOnly: true
     }
-}));
+};
+
+app.use(session(sessionConfig));
 
 // Passport middleware
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Mount routes
+// Health check route
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK' });
+});
+
+// API routes
 app.use('/auth', authRoutes);
 app.use('/api', userRoutes);
 app.use('/api/doctor', doctorRoutes);
 app.use('/api/patient', patientRoutes);
 
 // Error handling middleware
-app.use((req, res) => {
-    res.status(404).json({ message: 'Route not found' });
+app.use((req, res, next) => {
+    const error = new Error('Route not found');
+    error.status = 404;
+    next(error);
 });
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(500).json({ message: 'Something went wrong!' });
+    res.status(err.status || 500).json({
+        error: {
+            message: err.message || 'Something went wrong!',
+            status: err.status || 500
+        }
+    });
 });
 
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// Check if running in Vercel
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 5001;
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+}
 
 // Export the Express API
 module.exports = app;
