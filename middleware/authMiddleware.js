@@ -1,5 +1,6 @@
 // middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
+const ContractUser = require('../Models/userModel');
 
 const authMiddleware = async (req, res, next) => {
     try {
@@ -17,4 +18,5 @@ const authMiddleware = async (req, res, next) => {
     }
 };
 
+// Export as an object with named export
 module.exports = { authMiddleware };

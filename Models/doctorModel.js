@@ -27,6 +27,10 @@ const doctorSchema = new mongoose.Schema({
             required: true
         },
         address: String,
+        city: String,
+        state: String,
+        country: String,
+        pincode: String,
         profilePhoto: String
     },
     professionalInfo: {
@@ -46,9 +50,15 @@ const doctorSchema = new mongoose.Schema({
         qualification: [{
             degree: String,
             institution: String,
-            year: Number
+            year: Number,
+            duration: String
         }],
-        currentPractice: String
+        currentPractice: {
+            hospitalName: String,
+            address: String,
+            position: String
+        },
+        languages: [String]
     },
     expertise: [{
         type: String
@@ -60,18 +70,18 @@ const doctorSchema = new mongoose.Schema({
         },
         currency: {
             type: String,
-            default: 'USD'
+            default: 'INR'
+        },
+        followUpFee: {
+            type: Number
+        },
+        emergencyFee: {
+            type: Number
+        },
+        videoConsultationFee: {
+            type: Number
         }
     },
-    bio: {
-        type: String,
-        required: true
-    },
-    portfolio: [{
-        title: String,
-        description: String,
-        link: String
-    }],
     availability: {
         days: [{
             type: String,
@@ -79,9 +89,84 @@ const doctorSchema = new mongoose.Schema({
         }],
         timeSlots: [{
             startTime: String,
-            endTime: String
+            endTime: String,
+            maxPatients: {
+                type: Number,
+                default: 1
+            }
+        }],
+        appointmentDuration: {
+            type: Number, // in minutes
+            default: 30
+        },
+        customTimeSlots: [{
+            date: Date,
+            slots: [{
+                startTime: String,
+                endTime: String,
+                available: {
+                    type: Boolean,
+                    default: true
+                }
+            }]
         }]
     },
+    calendarSettings: {
+        breakTime: {
+            type: Number, // in minutes
+            default: 15
+        },
+        maxAppointmentsPerDay: {
+            type: Number,
+            default: 20
+        },
+        appointmentBuffer: {
+            type: Number, // in minutes
+            default: 10
+        },
+        workingHours: {
+            start: {
+                type: String,
+                default: '09:00'
+            },
+            end: {
+                type: String,
+                default: '17:00'
+            }
+        },
+        notifications: {
+            email: {
+                type: Boolean,
+                default: true
+            },
+            sms: {
+                type: Boolean,
+                default: true
+            },
+            whatsapp: {
+                type: Boolean,
+                default: false
+            }
+        },
+        autoConfirm: {
+            type: Boolean,
+            default: false
+        },
+        allowEmergency: {
+            type: Boolean,
+            default: true
+        }
+    },
+    bio: {
+        type: String,
+        required: true
+    },
+    services: [{
+        name: String,
+        description: String,
+        duration: Number,
+        fee: Number
+    }],
     ratings: {
         average: {
             type: Number,
@@ -90,16 +175,61 @@ const doctorSchema = new mongoose.Schema({
         count: {
             type: Number,
             default: 0
+        },
+        reviews: [{
+            patientId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Patient'
+            },
+            rating: Number,
+            review: String,
+            date: {
+                type: Date,
+                default: Date.now
+            }
+        }]
+    },
+    statistics: {
+        totalPatients: {
+            type: Number,
+            default: 0
+        },
+        totalAppointments: {
+            type: Number,
+            default: 0
+        },
+        cancelledAppointments: {
+            type: Number,
+            default: 0
+        },
+        emergencyConsultations: {
+            type: Number,
+            default: 0
         }
     },
     verified: {
         type: Boolean,
         default: false
     },
+    status: {
+        type: String,
+        enum: ['active', 'inactive', 'suspended'],
+        default: 'active'
+    },
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
     }
+});
+
+// Pre-save middleware to update the updatedAt field
+doctorSchema.pre('save', function(next) {
+    this.updatedAt = Date.now();
+    next();
 });
 
 const Doctor = mongoose.model('Doctor', doctorSchema);
