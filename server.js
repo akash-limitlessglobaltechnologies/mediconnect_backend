@@ -63,27 +63,25 @@ app.use('/api/doctor', doctorRoutes);
 app.use('/api/patient', patientRoutes);
 
 // Error handling middleware
-app.use((req, res, next) => {
-    const error = new Error('Route not found');
-    error.status = 404;
-    next(error);
+app.get('/', (req, res) => {
+    res.json({ message: ' System API running' });
 });
 
+// Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(err.status || 500).json({
-        error: {
-            message: err.message || 'Something went wrong!',
-            status: err.status || 500
-        }
+    res.status(500).json({ 
+        success: false,
+        message: 'Something went wrong!',
+        error: err.message 
     });
 });
 
-// Check if running in Vercel
+// For local development
 if (process.env.NODE_ENV !== 'production') {
-    const PORT = process.env.PORT || 5001;
+    const PORT = process.env.PORT || 5006;
     app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
+        console.log(`Server running on http://localhost:${PORT}`);
     });
 }
 
