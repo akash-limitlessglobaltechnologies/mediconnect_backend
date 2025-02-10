@@ -1,6 +1,7 @@
 // controllers/appointmentController.js
 const Appointment = require('../Models/appointmentModel');
 const Doctor = require('../Models/doctorModel');
+const Patient = require('../Models/patientModel');
 
 const appointmentController = {
     // Get all appointments for a doctor
@@ -255,6 +256,14 @@ const appointmentController = {
                 symptoms
             } = req.body;
 
+            console.log('Booking appointment with data:', {
+                userId,
+                doctorId,
+                appointmentDate,
+                timeSlot,
+                type
+            });
+
             // Get patient profile
             const patient = await Patient.findOne({ userId });
             if (!patient) {
@@ -278,7 +287,8 @@ const appointmentController = {
                 doctorId,
                 appointmentDate,
                 'timeSlot.startTime': timeSlot.startTime,
-                'timeSlot.endTime': timeSlot.endTime
+                'timeSlot.endTime': timeSlot.endTime,
+                status: { $nin: ['cancelled'] } // Exclude cancelled appointments
             });
 
             if (existingAppointment) {
@@ -292,15 +302,16 @@ const appointmentController = {
             const appointment = new Appointment({
                 doctorId,
                 patientId: patient._id,
-                appointmentDate,
+                appointmentDate: new Date(appointmentDate),
                 timeSlot,
-                duration: doctor.availability.appointmentDuration,
+                duration: doctor.availability.appointmentDuration || 30,
                 type,
                 description,
                 symptoms,
+                status: 'scheduled',
                 fee: {
                     amount: doctor.pricing.consultationFee,
-                    currency: doctor.pricing.currency
+                    currency: doctor.pricing.currency || 'INR'
                 }
             });
 
@@ -315,16 +326,19 @@ const appointmentController = {
 
             res.status(201).json({
                 success: true,
-                data: appointment
+                data: appointment,
+                message: 'Appointment booked successfully'
             });
         } catch (error) {
             console.error('Book appointment error:', error);
             res.status(500).json({
                 success: false,
-                message: 'Error booking appointment'
+                message: 'Error booking appointment',
+                error: error.message
             });
         }
     },
+
 
     getPatientAppointments: async (req, res) => {
         try {

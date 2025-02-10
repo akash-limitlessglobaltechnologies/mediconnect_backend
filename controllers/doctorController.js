@@ -897,6 +897,90 @@ const doctorController = {
                     message: 'Error fetching available slots'
                 });
             }
+        },
+        searchDoctors: async (req, res) => {
+            try {
+                const {
+                    specialization,
+                    name,
+                    city,
+                    availability,
+                    page = 1,
+                    limit = 10
+                } = req.query;
+    
+                let query = { status: 'active' };
+    
+                // Build search query
+                if (specialization) {
+                    query['professionalInfo.specialization'] = new RegExp(specialization, 'i');
+                }
+                if (name) {
+                    query['personalInfo.fullName'] = new RegExp(name, 'i');
+                }
+                if (city) {
+                    query['personalInfo.city'] = new RegExp(city, 'i');
+                }
+    
+                console.log('Search query:', query);
+    
+                // Get doctors with pagination
+                const skip = (page - 1) * limit;
+                const doctors = await Doctor.find(query)
+                    .select('personalInfo professionalInfo availability pricing ratings bio')
+                    .skip(skip)
+                    .limit(parseInt(limit));
+    
+                const total = await Doctor.countDocuments(query);
+    
+                console.log(`Found ${doctors.length} doctors out of ${total}`);
+    
+                res.json({
+                    success: true,
+                    data: {
+                        doctors,
+                        pagination: {
+                            total,
+                            page: parseInt(page),
+                            pages: Math.ceil(total / limit)
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Search doctors error:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'Error searching doctors'
+                });
+            }
+        },
+        getDoctorDetails: async (req, res) => {
+            try {
+                const { doctorId } = req.params;
+                console.log('Fetching details for doctor:', doctorId);
+    
+                const doctor = await Doctor.findById(doctorId)
+                    .select('-calendarSettings.notifications -statistics');
+    
+                if (!doctor) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Doctor not found'
+                    });
+                }
+    
+                res.json({
+                    success: true,
+                    data: doctor
+                });
+            } catch (error) {
+                console.error('Get doctor details error:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'Error fetching doctor details',
+                    error: error.message
+                });
+            }
         }
         
         

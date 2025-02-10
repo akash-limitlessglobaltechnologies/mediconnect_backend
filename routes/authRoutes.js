@@ -5,7 +5,7 @@ const passport = require('passport');
 const { generateToken } = require('../utils/generateToken');
 
 // Get frontend URL from environment variable
-const FRONTEND_URL = process.env.FRONTEND_URI || 'https://mediconnect-frontend.vercel.app';
+const FRONTEND_URL = process.env.FRONTEND_URI || 'http://localhost:3000';
 
 router.get('/google',
     passport.authenticate('google', { 

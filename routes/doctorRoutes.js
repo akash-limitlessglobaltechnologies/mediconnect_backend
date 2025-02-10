@@ -6,7 +6,10 @@ const appointmentController = require('../controllers/appointmentController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
 // Public Routes (No auth required)
-router.get('/search', doctorController.searchDoctors);
+router.get('/list', (req, res, next) => {
+    console.log('List route hit with query:', req.query);
+    next();
+}, doctorController.searchDoctors);
 router.get('/:doctorId/details', doctorController.getDoctorDetails);
 router.get('/:doctorId/available-slots', doctorController.getAvailableSlots);
 
@@ -17,6 +20,7 @@ router.use(authMiddleware);
 router.post('/register', doctorController.register);
 router.get('/profile', doctorController.getProfile);
 router.put('/profile', doctorController.updateProfile);
+
 
 // Dashboard Data Routes
 router.get('/dashboard', doctorController.getDashboardData);
